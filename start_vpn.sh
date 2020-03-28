@@ -5,7 +5,7 @@
 
 kill_switch() {
 	local docker_network="$(ip -o addr show dev eth0 | awk '$3 == "inet" {print $4}')" \
-             docker6_network="$(ip -o addr show dev eth0 | awk '$3 == "inet6" {print $4; exit}')"	
+             docker6_network="$(ip -o addr show dev eth0 | awk '$3 == "inet6" {print $4; exit}')"
 
 	iptables -F
 	iptables -X
@@ -100,7 +100,7 @@ create_tun_device() {
 
 setup_nordvpn() {
 	[[ -n ${TECHNOLOGY} ]] && nordvpn set technology ${TECHNOLOGY}
-	[[ -n ${PROTOCOL} ]]  && nordvpn set protocol ${PROTOCOL} 
+	[[ -n ${PROTOCOL} ]]  && nordvpn set protocol ${PROTOCOL}
 	[[ -n ${OBFUSCATE} ]] && nordvpn set obfuscate ${OBFUSCATE}
 	[[ -n ${CYBER_SEC} ]] && nordvpn set cybersec ${CYBER_SEC}
 	[[ -n ${DNS} ]] && nordvpn set dns ${DNS//[;,]/ }
@@ -110,9 +110,9 @@ setup_nordvpn() {
 
 kill_switch
 
-pkill nordvpnd 
+pkill nordvpnd
 rm -f /run/nordvpnd.sock
-sg vpn -c nordvpnd & 
+sg vpn -c nordvpnd &
 sleep 0.5
 
 create_tun_device
@@ -120,5 +120,10 @@ create_tun_device
 nordvpn login -u ${USER} -p ${PASS}
 setup_nordvpn
 nordvpn connect ${CONNECT} || exit 1
+
+echo "*/${MINUTES} * * * * nordvpn connect ${CONNECT} >> /var/log/cron.log 2>&1
+# This extra line makes it a valid cron" > scheduler.txt
+crontab scheduler.txt
+cron
 
 tail -f --pid=$(pidof nordvpnd) /var/log/nordvpn/daemon.log
